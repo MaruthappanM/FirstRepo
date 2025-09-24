@@ -1,0 +1,147 @@
+1. Introduction
+
+OIPF (Open IPTV Forum) is an industry standard that defines APIs for interactive TV applications. Its main goal is to allow web-based apps (HTML, JavaScript) to control TV features, such as:
+
+Live broadcast video
+
+Channel tuning
+
+DRM content playback
+
+Access to Electronic Program Guides (EPG)
+
+Application lifecycle management
+
+OIPF is the foundation for HbbTV (Hybrid Broadcast Broadband TV), which combines broadcast TV and internet services.
+
+2. Why WebKit is used in STBs
+
+Many Set-Top Box (STB) browsers use WebKit or WPE WebKit as the rendering engine because:
+
+WebKit can render HTML, CSS, JavaScript efficiently on embedded devices.
+
+It allows vendors to embed OIPF plugins for TV-specific APIs.
+
+The browser provides the UI layer, while TV-specific APIs handle broadcast, DRM, and middleware communication.
+
+3. OIPF Architecture
+
+The architecture can be summarized as:
+
+WebKit Browser → Renders HTML/JS/CSS.
+
+OIPF Plugin Layer → Embedded objects exposing TV APIs to JavaScript.
+
+STB Middleware / TV OS → Handles broadcast tuning, DRM, video plane, key input.
+
+Broadcast / Broadband → Provides live TV and internet-delivered services.
+
+Flow:
+
+HTML/JS UI (WebKit)
+       │
+       ▼
+OIPF Plugin (oipfObjectFactory, video/broadcast, DRM, AppManager)
+       │
+       ▼
+STB Middleware (Tuner, DRM, Application Control)
+       │
+       ▼
+Broadcast / Internet Services
+
+4. OIPF Objects in HTML
+
+OIPF objects are embedded using <object> tags:
+
+<!-- Factory object to create OIPF objects -->
+<object id="oipfObjectFactory" type="application/oipfObjectFactory" style="display:none;"></object>
+
+<!-- Broadcast video object -->
+<object id="video" type="video/broadcast" width="640" height="360"></object>
+
+
+Common objects:
+
+Object	Purpose
+oipfObjectFactory	Creates OIPF objects (ApplicationManager, VideoBroadcast, DRM)
+video/broadcast	Displays live broadcast video, binds to tuner
+application/oipfApplicationManager	Shows/hides apps, controls app lifecycle
+oipfDrmAgent	Handles DRM-protected content
+5. Communication Flow
+
+Page loads in WebKit → JavaScript runs.
+
+OIPF objects are created → exposed by the plugin layer.
+
+JS calls plugin APIs → instructs STB middleware.
+
+Middleware executes → tunes channels, starts video plane, manages DRM.
+
+Events are returned → JS updates UI or logs status.
+
+6. Minimal Example
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OIPF WebKit Example</title>
+</head>
+<body>
+  <h2>OIPF WebKit Communication Demo</h2>
+
+  <!-- OIPF Plugin Objects -->
+  <object id="oipfObjectFactory" type="application/oipfObjectFactory" style="display:none;"></object>
+  <object id="video" type="video/broadcast" width="640" height="360"></object>
+
+  <button onclick="startBroadcast()">Start TV</button>
+  <button onclick="stopBroadcast()">Stop TV</button>
+
+  <script>
+    var video = document.getElementById("video");
+
+    function startBroadcast() {
+      try {
+        video.bindToCurrentChannel();  // Start live TV
+        console.log("Broadcast started");
+      } catch (e) {
+        console.log("Error: " + e.message);
+      }
+    }
+
+    function stopBroadcast() {
+      try {
+        video.release();  // Stop TV
+        console.log("Broadcast stopped");
+      } catch (e) {
+        console.log("Error: " + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+Explanation:
+
+<object type="application/oipfObjectFactory"> → provides JS access to TV APIs.
+
+<object type="video/broadcast"> → displays live TV using STB’s video plane.
+
+bindToCurrentChannel() → starts tuner playback.
+
+release() → stops playback.
+
+JS handles events, logs, and UI updates.
+
+7. Key Points
+
+WebKit renders HTML/JS, but video and tuner operations are handled by OIPF plugin and middleware.
+
+JavaScript acts as the controller for broadcast features.
+
+Only works on OIPF/HbbTV-enabled STB browsers, not on standard PC browsers.
+
+Enables apps like Red Button apps, EPG, catch-up TV, VoD, and interactive ads.
+
+✅ In short:
+
+WebKit = UI layer, OIPF plugin = bridge, STB middleware = hardware/control layer. JS communicates via OIPF objects to control live broadcast and applications.
